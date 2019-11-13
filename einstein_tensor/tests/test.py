@@ -60,5 +60,14 @@ class TestEinsteinTensor(unittest.TestCase):
     def test_repr_tensor(self):
         self.assertEqual(self.a.__repr__(), self.a.__str__())
 
+    def test_neg_tensor_plus_tensor_equals_zero_tensor(self):
+        zero_list = [0 for x in self.a_value]
+        self.assertEqual(self.a + -self.a, et.Tensor(zero_list, self.a_indices))
+
+    def test_tensor_minus_itself_equals_zero_tensor(self):
+        zero_list = [0 for x in self.a_value]
+        self.assertEqual(self.a - self.a, et.Tensor(zero_list, self.a_indices))
+
+
 if __name__ == '__main__':
     unittest.main()
