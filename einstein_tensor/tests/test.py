@@ -91,9 +91,22 @@ class TestEinsteinTensor(unittest.TestCase):
         three = et.Tensor(3, [])
         self.assertEqual(three, 3)
 
-    def test_one_index_and_one_slice_in_rank_two_tensor(self) -> None:
+    def test_one_slice_then_one_slice_in_rank_two_tensor(self) -> None:
         rank_two_tensor = self.a * et.Tensor(self.a_value, ['^nu'])
         self.assertEqual(rank_two_tensor[:, 0], self.a)
+
+    def test_one_index_then_one_slice_in_rank_two_tensor(self) -> None:
+        rank_two_tensor = self.a * et.Tensor(self.a_value, ['^nu'])
+        a_nu = et.Tensor(self.a_value, ['^nu'])
+        self.assertEqual(rank_two_tensor[0, :], a_nu)
+
+    def test_two_indices_in_rank_two_tensor(self) -> None:
+        rank_two_tensor = self.a * et.Tensor(self.a_value, ['^nu'])
+        self.assertEqual(rank_two_tensor[0, 0], 1)
+
+    def test_two_slices_in_rank_two_tensor(self) -> None:
+        rank_two_tensor = self.a * et.Tensor(self.a_value, ['^nu'])
+        self.assertEqual(rank_two_tensor[:, :], rank_two_tensor)
 
 
 if __name__ == '__main__':
