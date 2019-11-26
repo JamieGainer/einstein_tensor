@@ -67,7 +67,7 @@ class Tensor():
             if type(index) is int:
                 pass
             elif type(index) is slice:
-                if slice.start is None and slice.stop is None and slice.step is None:
+                if index.start is None and index.stop is None and index.step is None:
                     list_of_indices.append(self.indices[i_index])
                 else:
                     raise ValueError(value_error_string)
