@@ -6,3 +6,4 @@
 2.  Add functionality for renaming indices
 3.  If new tensor specified with contracted indices, contract
 4.  Test hard
+5.  Understand the best way to set up as a package
