@@ -2,6 +2,23 @@ from __future__ import annotations
 import numpy as np
 
 
+def _is_raised(index: str) -> bool:
+    # returns true if index is raised, i.e., begins with ^, false otherwise
+    return index[0] == '^'
+
+def _is_lowered(index: str) -> bool:
+    # returns true if index is lowered, i.e., begins with _, false otherwise
+    return index[0] == '_'
+
+def _is_raised_or_lowered(index: str) -> bool:
+    # returns true if index is raised or lowered (begins with '^' or '_', false otherwise
+    return _is_raised(index) or _is_lowered(index)
+
+def _is_not_raised_or_lowered(index: str) -> bool:
+    # returns true if index is not raised or lowered (i.e. does not begin with '^' or '_'), false otherwise
+    return not _is_raised_or_lowered(index)
+
+
 class Tensor():
     """
     Creates a tensor with indices.  Multiplication of these tensors automatically follows the Einstein summation
@@ -75,6 +92,17 @@ class Tensor():
                 raise ValueError(value_error_string)
         return Tensor(self.value[tuple_of_indices], list_of_indices)
 
+    def reindex_as(self, new_indices):
+        if len(new_indices) != len(self.indices):
+            raise ValueError('Cannot change number of indices/ dimensionality of tensor through reindexing.')
+        for old, new in zip(self.indices, new_indices):
+            if _is_raised(old) and not _is_raised(new):
+                raise ValueError('Cannot change raised index to other kind of index through reindexing.')
+            if _is_lowered(old) and not _is_lowered(new):
+                raise ValueError('Cannot change lowered index to other kind of index through reindexing.')
+            if _is_not_raised_or_lowered(old) and _is_raised_or_lowered(new):
+                raise ValueError('Cannot change generic index to raised or lowered index through reindexing.')
+        self.indices = new_indices
 
     def _multiply_by_tensor(self, other: Tensor) -> Tensor:
         # create a _TensorMultiplier object and use it to perform the multiplication
@@ -124,20 +152,16 @@ class _TensorMultiplier():
 
     def _check_for_repeated_raised_or_lowered_index(self, index: str) -> None:
         # return a ValueError if a raised or lowered index occurs in both self._a and self._b
-        if not self._is_raised_or_lowered(index):
+        if not _is_raised_or_lowered(index):
             return
         if index in self._b_indices_index:
             raise ValueError("Cannot multiply tensors with identical raised or lowered indices.")
-
-    def _is_raised_or_lowered(self, index: str) -> bool:
-        # returns true if coordinate corresponds to a raised ('^') or lowered ('_') index, false otherwise
-        return index[0] in ['^', '_']
 
     def _obtain_complimentary_method(self, index: str) -> str:
         # return the string describing a lowered index, if index is a raised index string (and vice versa)
         # if the input string in "index" is neither raised or lowered, return index
         complimentary_index = index
-        if self._is_raised_or_lowered(index):
+        if _is_raised_or_lowered(index):
             complimentary_index = self._complimentary_index(index)
         return complimentary_index
 

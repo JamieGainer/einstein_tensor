@@ -108,6 +108,19 @@ class TestEinsteinTensor(unittest.TestCase):
         rank_two_tensor = self.a * et.Tensor(self.a_value, ['^nu'])
         self.assertEqual(rank_two_tensor[:, :], rank_two_tensor)
 
+    def test_replace_indices_with_same_pattern(self) -> None:
+        rank_three_tensor = self.a * et.Tensor(self.a_value, ['_nu']) * et.Tensor(1, ['i'])
+        other_rank_three_tensor = et.Tensor(rank_three_tensor.value, ['^alpha', '_beta', 'j'])
+        other_rank_three_tensor.reindex_as(['^mu', '_nu', 'i'])
+        self.assertEqual(rank_three_tensor, other_rank_three_tensor)
+
+    def test_replace_indices_with_different_number_of_indices_raises_value_error(self) -> None:
+        with self.assertRaises(ValueError):
+            self.a.reindex_as(['^nu', '^rho'])
+
+    def test_replace_indices_with_different_pattern_raises_value_error(self) -> None:
+        with self.assertRaises(ValueError):
+            self.a.reindex_as(['_nu'])
 
 if __name__ == '__main__':
     unittest.main()
