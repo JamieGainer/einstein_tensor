@@ -122,5 +122,56 @@ class TestEinsteinTensor(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.a.reindex_as(['_nu'])
 
+    def test_add_tensor_to_integer_raises_value_error(self) -> None:
+        with self.assertRaises(TypeError):
+            b = self.a + 3
+
+    def test_add_integer_to_tensor_raises_value_error(self) -> None:
+        with self.assertRaises(TypeError):
+            b = 3 + self.a
+
+    def test_tensors_with_different_frames_are_not_equal(self):
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        b = et.Tensor_with_Frame(self.a_value, self.a_indices, 'B')
+        self.assertNotEqual(a, b)
+
+    def test_scalars_with_different_frames_are_equal(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = et.Tensor_with_Frame(1, [], 'B')
+        self.assertEqual(a, b)
+
+    def test_scalar_tensor_with_frame_equal_to_tensor(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = et.Tensor(1, [])
+        self.assertEqual(a, b)
+
+    def test_scalar_tensor_with_frame_equal_to_scalar(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        self.assertEqual(a, 1)
+
+    def test_scalars_tensors_with_different_frames_are_not_equal_if_values_are_unequal(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = et.Tensor_with_Frame(2, [], 'B')
+        self.assertNotEqual(a, b)
+
+    def test_scalar_tensor_and_tensor_with_frame_are_not_equal_if_values_are_unequal(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = et.Tensor(2, [])
+        self.assertNotEqual(a, b)
+
+    def test_scalar_tensor_and_tensor_with_frame_are_not_equal_if_values_are_unequal(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = et.Tensor(2, [])
+        self.assertNotEqual(a, b)
+
+    def test_scalar_tensor_and_scalar_are_not_equal_if_values_are_unequal(self):
+        a = et.Tensor_with_Frame(1, [], 'A')
+        b = 2
+        self.assertNotEqual(a, b)
+
+#    def test_that_sum_of_tensors_with_frames_has_same_frame(self):
+#        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+#        self.assertEqual((a + a).frame, a.frame)
+
 if __name__ == '__main__':
     unittest.main()

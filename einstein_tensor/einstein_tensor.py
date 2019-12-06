@@ -31,7 +31,7 @@ class Tensor():
         indices: a list or numpy array of strings describing the indices.
 
     These arguments are cast into numpy arrays which are the public attributes of the class.
-    ddd"""
+    """
 
     def __init__(self, value, indices) -> None:
         self.value = np.array(value)
@@ -54,9 +54,12 @@ class Tensor():
         return self.__str__()
 
     def __add__(self, other: Tensor) -> Tensor:
-        if self.indices != other.indices:
-            raise ValueError("Tensors have different indices so cannot be added.")
-        return Tensor(self.value + other.value, self.indices)
+        try:
+            if self.indices != other.indices:
+                raise ValueError("Tensors have different indices so cannot be added.")
+            return Tensor(self.value + other.value, self.indices)
+        except AttributeError:
+            raise TypeError("unsupported operand type(s) for +: 'Tensor' and " + str(type(other)))
 
     def __sub__(self, other: Tensor) -> Tensor:
         return self + -other
@@ -193,3 +196,47 @@ class _TensorMultiplier():
         # one of self._b's indices
         self._a_keep_indices.append(index)
 
+
+class Tensor_with_Frame(Tensor):
+    """
+    Give Tensor a frame attribute which helps us to keep track of reference frames.
+
+    Initialized with
+    Args:
+        value: a numpy array, list, or tuple containing the values in the tensor
+        indices: a list or numpy array of strings describing the indices.
+        frame: generally a string indicating the frame name
+
+    These arguments are cast into numpy arrays which are the public attributes of the class.
+    """
+
+    def __init__(self, value, indices, frame):
+        self.tensor = Tensor(value, indices)
+        self.frame = frame
+
+    def _is_scalar(self):
+        return self.tensor.value.shape == ()
+
+    def _cast_scalar_to_my_frame(self, scalar):
+        if hasattr(scalar, 'tensor'):
+            return Tensor_with_Frame(scalar.tensor.value, self.tensor.indices, self.frame)
+        elif hasattr(scalar, 'value'):
+            return Tensor_with_Frame(scalar.value, [], self.frame)
+        else:
+            return Tensor_with_Frame(scalar, [], self.frame)
+
+    def tensor_equals(self, other):
+        try:
+            return self.tensor == other.tensor and self.frame == other.frame
+        except AttributeError:
+            return False
+
+    def __eq__(self, other) -> bool:
+        if self._is_scalar():
+            new_other = self._cast_scalar_to_my_frame(other)
+            return self.tensor_equals(new_other)
+        else:
+            return self.tensor_equals(other)
+
+
+#    def __add__(self, other):
