@@ -169,9 +169,9 @@ class TestEinsteinTensor(unittest.TestCase):
         b = 2
         self.assertNotEqual(a, b)
 
-#    def test_that_sum_of_tensors_with_frames_has_same_frame(self):
-#        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
-#        self.assertEqual((a + a).frame, a.frame)
+    def test_that_sum_of_tensors_with_frames_has_same_frame(self):
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual((a + a).frame, a.frame)
 
 if __name__ == '__main__':
     unittest.main()

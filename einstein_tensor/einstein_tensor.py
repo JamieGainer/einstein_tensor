@@ -218,6 +218,10 @@ class Tensor_with_Frame(Tensor):
         self.tensor = Tensor(value, indices)
         self.frame = frame
 
+    @classmethod
+    def fromTensor(cls, tensor, frame):
+        return cls(tensor.value, tensor.indices, frame)
+
     def _cast_scalar_to_my_frame(self, scalar):
         if hasattr(scalar, 'tensor'):
             return Tensor_with_Frame(scalar.tensor.value, self.tensor.indices, self.frame)
@@ -239,6 +243,5 @@ class Tensor_with_Frame(Tensor):
         else:
             return self.tensor_equals(other)
 
-
-
-#    def __add__(self, other):
+    def __add__(self, other: Tensor_with_Frame) -> Tensor_with_Frame:
+        return Tensor_with_Frame.fromTensor(self.tensor + other.tensor, self.frame)
