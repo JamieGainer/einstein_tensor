@@ -37,14 +37,18 @@ class Tensor():
         self.value = np.array(value)
         self.indices = np.array(indices)
 
+    def is_scalar(self, tensor) -> bool:
+        return tensor.value.shape == ()
+
     def __eq__(self, other) -> bool:
         try:
-            equal_values = np.array_equal(self.value, other.value)
-            equal_indices = np.array_equal(self.indices, other.indices)
-            return equal_values and equal_indices
-        except:
-            if self.value.shape == ():
+            if self.is_scalar(self):
                 return self.value == other
+            else:
+                equal_values = np.array_equal(self.value, other.value)
+                equal_indices = np.array_equal(self.indices, other.indices)
+                return equal_values and equal_indices
+        except AttributeError:
             return False
 
     def __str__(self) -> str:
@@ -214,9 +218,6 @@ class Tensor_with_Frame(Tensor):
         self.tensor = Tensor(value, indices)
         self.frame = frame
 
-    def _is_scalar(self):
-        return self.tensor.value.shape == ()
-
     def _cast_scalar_to_my_frame(self, scalar):
         if hasattr(scalar, 'tensor'):
             return Tensor_with_Frame(scalar.tensor.value, self.tensor.indices, self.frame)
@@ -232,11 +233,12 @@ class Tensor_with_Frame(Tensor):
             return False
 
     def __eq__(self, other) -> bool:
-        if self._is_scalar():
+        if self.is_scalar(self.tensor):
             new_other = self._cast_scalar_to_my_frame(other)
             return self.tensor_equals(new_other)
         else:
             return self.tensor_equals(other)
+
 
 
 #    def __add__(self, other):
