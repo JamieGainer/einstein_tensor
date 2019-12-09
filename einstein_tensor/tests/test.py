@@ -173,5 +173,31 @@ class TestEinsteinTensor(unittest.TestCase):
         a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
         self.assertEqual((a + a).frame, a.frame)
 
+    def test_that_sum_of_tensors_with_different_frames_raises_exception(self):
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        b = et.Tensor_with_Frame(self.a_value, self.a_indices, 'B')
+        with self.assertRaises(ValueError):
+            c = a + b
+
+    def test_that_sum_of_tensor_with_frame_and_a_tensor_without_frames_raises_exception(self):
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        b = et.Tensor(self.a_value, self.a_indices)
+        with self.assertRaises(TypeError):
+            c = a + b
+
+    def test_str_tensor_with_frame(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(a.__str__(), str(a.tensor.value) + " " + str(a.tensor.indices) + " " + a.frame)
+
+    def test_repr_tensor_with_frame(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(a.__repr__(), a.__str__())
+
+    def test_neg_tensor_with_frame_plus_tensor_with_frame_equals_zero_tensor(self) -> None:
+        zero_list = [0 for x in self.a_value]
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(a + -a, et.Tensor_with_Frame(zero_list, self.a_indices, 'A'))
+
+
 if __name__ == '__main__':
     unittest.main()

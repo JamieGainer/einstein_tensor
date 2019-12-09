@@ -219,7 +219,7 @@ class Tensor_with_Frame(Tensor):
         self.frame = frame
 
     @classmethod
-    def fromTensor(cls, tensor, frame):
+    def from_tensor(cls, tensor, frame):
         return cls(tensor.value, tensor.indices, frame)
 
     def _cast_scalar_to_my_frame(self, scalar):
@@ -244,4 +244,15 @@ class Tensor_with_Frame(Tensor):
             return self.tensor_equals(other)
 
     def __add__(self, other: Tensor_with_Frame) -> Tensor_with_Frame:
-        return Tensor_with_Frame.fromTensor(self.tensor + other.tensor, self.frame)
+        try:
+            if self.frame != other.frame:
+                raise ValueError("Cannot add tensors in different frames.")
+        except AttributeError:
+            raise TypeError('Cannot add Tensor_with_Frame to Tensor (without frame).')
+        return Tensor_with_Frame.from_tensor(self.tensor + other.tensor, self.frame)
+
+    def __str__(self) -> str:
+        return str(self.tensor.value) + " " + str(self.tensor.indices) + " " + self.frame
+
+    def __neg__(self) -> Tensor:
+        return Tensor_with_Frame.from_tensor(-self.tensor, self.frame)
