@@ -2,6 +2,11 @@ import unittest
 import numpy as np
 import einstein_tensor as et
 
+# Next test that we raise a value error when we try to multiply tensors in different frames
+# And that we raise a type error when we multiply a tensor with a frame by a tensor without a frame
+# There is also a potential issue with the metric tensor: will it always need a frame to work
+# Maybe make metric tensor a function that returns a metric tensor with the correct indices and frame
+
 class TestEinsteinTensor(unittest.TestCase):
 
     a_value = [1, 0, 0, 0]
@@ -48,11 +53,25 @@ class TestEinsteinTensor(unittest.TestCase):
         vector_squared_value = self.a_value[0]**2 - sum([x**2 for x in self.a_value[1:]])
         self.assertEqual((self.a * b).value, vector_squared_value)
 
-    def test_right_multiply_vector_by_constant(self) -> None:
+    def test_right_multiply_vector_by_one(self) -> None:
         self.assertEqual(self.a * 1, self.a)
 
-    def test_left_multiply_vector_by_constant(self) -> None:
+    def test_left_multiply_vector_by_one(self) -> None:
         self.assertEqual(1 * self.a, self.a)
+
+    def test_right_multiply_vector_by_two(self) -> None:
+        self.assertEqual(self.a * 2, self.a + self.a)
+
+    def test_left_multiply_vector_by_two(self) -> None:
+        self.assertEqual(2 * self.a, self.a + self.a)
+
+    def test_right_multiply_vector_by_two_point_five(self) -> None:
+        product_tensor = et.Tensor(2.5 * np.array(self.a_value), self.a_indices)
+        self.assertEqual(self.a * 2.5, product_tensor)
+
+    def test_left_multiply_vector_by_two_point_five(self) -> None:
+        product_tensor = et.Tensor(2.5 * np.array(self.a_value), self.a_indices)
+        self.assertEqual(2.5 * self.a, product_tensor)
 
     def test_str_tensor(self) -> None:
         self.assertEqual(self.a.__str__(), str(self.a.value) + " " + str(self.a.indices))
@@ -67,6 +86,9 @@ class TestEinsteinTensor(unittest.TestCase):
     def test_tensor_minus_itself_equals_zero_tensor(self) -> None:
         zero_list = [0 for x in self.a_value]
         self.assertEqual(self.a - self.a, et.Tensor(zero_list, self.a_indices))
+
+    def test_twice_tensor_minus_itself_equals_itself(self) -> None:
+        self.assertEqual((self.a + self.a) - self.a, self.a)
 
     def test_list_passed_to_tensor_as_only_input_raises_exception(self) -> None:
         with self.assertRaises(ValueError):
@@ -197,6 +219,42 @@ class TestEinsteinTensor(unittest.TestCase):
         zero_list = [0 for x in self.a_value]
         a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
         self.assertEqual(a + -a, et.Tensor_with_Frame(zero_list, self.a_indices, 'A'))
+
+    def test_tensor_with_frame_minus_itself_equals_zero_tensor(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        zero_list = [0 for x in self.a_value]
+        zero_frame_tensor = et.Tensor_with_Frame(zero_list, self.a_indices, 'A')
+        self.assertEqual(a - a, zero_frame_tensor)
+
+    def test_twice_tensor_with_frame_minus_itself_equals_itself(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual((a + a) - a, a)
+
+    def test_right_multiply_vector_with_frame_by_one(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(a * 1, a)
+
+    def test_left_multiply_vector_with_frame_by_one(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(1 * a, a)
+
+    def test_right_multiply_vector_with_frame_by_two(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(a * 2, a + a)
+
+    def test_left_multiply_vector_with_frame_by_two(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        self.assertEqual(2 * a, a + a)
+
+    def test_right_multiply_vector_with_frame_by_two_point_five(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        product_tensor_with_frame = et.Tensor_with_Frame(2.5 * np.array(self.a_value), self.a_indices, 'A')
+        self.assertEqual(a * 2.5, product_tensor_with_frame)
+
+    def test_left_multiply_vector_with_frame_by_two_point_five(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        product_tensor_with_frame = et.Tensor_with_Frame(2.5 * np.array(self.a_value), self.a_indices, 'A')
+        self.assertEqual(2.5 * a, product_tensor_with_frame)
 
 
 if __name__ == '__main__':

@@ -254,5 +254,12 @@ class Tensor_with_Frame(Tensor):
     def __str__(self) -> str:
         return str(self.tensor.value) + " " + str(self.tensor.indices) + " " + self.frame
 
-    def __neg__(self) -> Tensor:
+    def __neg__(self) -> Tensor_with_Frame:
         return Tensor_with_Frame.from_tensor(-self.tensor, self.frame)
+
+    def __rmul__(self, other) -> Tensor_with_Frame:
+
+        return Tensor_with_Frame.from_tensor(other * self.tensor, self.frame)
+
+    def __mul__(self, other) -> Tensor_with_Frame:
+        return Tensor_with_Frame.from_tensor(self.tensor * other, self.frame)
