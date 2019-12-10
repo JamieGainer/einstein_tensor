@@ -146,6 +146,8 @@ class _TensorMultiplier():
         new_value = np.tensordot(self._a.value, self._b.value,
                                  axes=(self._a_contract_indices, self._b_contract_indices))
         new_indices = self._a_keep_indices + self._b_keep_indices
+        if new_indices == []:
+            return new_value
         return Tensor(new_value, new_indices)
 
     def _process_indices(self) -> None:
@@ -243,12 +245,15 @@ class Tensor_with_Frame(Tensor):
         else:
             return self.tensor_equals(other)
 
-    def __add__(self, other: Tensor_with_Frame) -> Tensor_with_Frame:
+    def _check_that_other_frame_exists_and_is_same(self, other) -> None:
         try:
             if self.frame != other.frame:
                 raise ValueError("Cannot add tensors in different frames.")
         except AttributeError:
             raise TypeError('Cannot add Tensor_with_Frame to Tensor (without frame).')
+
+    def __add__(self, other: Tensor_with_Frame) -> Tensor_with_Frame:
+        self._check_that_other_frame_exists_and_is_same(other)
         return Tensor_with_Frame.from_tensor(self.tensor + other.tensor, self.frame)
 
     def __str__(self) -> str:
@@ -258,8 +263,24 @@ class Tensor_with_Frame(Tensor):
         return Tensor_with_Frame.from_tensor(-self.tensor, self.frame)
 
     def __rmul__(self, other) -> Tensor_with_Frame:
-
         return Tensor_with_Frame.from_tensor(other * self.tensor, self.frame)
 
     def __mul__(self, other) -> Tensor_with_Frame:
-        return Tensor_with_Frame.from_tensor(self.tensor * other, self.frame)
+        if hasattr(other, 'frame'):
+            if other.frame == self.frame:
+                return Tensor_with_Frame.from_tensor(self.tensor * other.tensor, self.frame)
+            raise ValueError("Cannot multiply tensors in different frames.")
+        else:
+            if hasattr(other, 'value') and hasattr(other, 'indices'):
+                raise TypeError('Cannot multiply Tensor_with_Frame and Tensor (without frame).')
+            else:
+                return Tensor_with_Frame.from_tensor(self.tensor * other, self.frame)
+
+    def __getitem__(self, tuple_of_indices):
+        return Tensor_with_Frame.from_tensor(super().__getitem__(tuple_of_indices), self.frame)
+
+    def reindex_as(self, new_indices):
+        return Tensor_with_Frame.from_tensor(super().reindex_as(new_indices), self.frame)
+
+    def reframe_as(self, new_frame):
+        return Tensor_with_Frame.from_tensor(self.tensor, new_frame)

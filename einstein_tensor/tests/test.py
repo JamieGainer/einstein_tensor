@@ -51,7 +51,7 @@ class TestEinsteinTensor(unittest.TestCase):
         lowered_indices = [self.a_indices[0].replace('^', '_')]
         b = et.Tensor(self.a_value, lowered_indices)
         vector_squared_value = self.a_value[0]**2 - sum([x**2 for x in self.a_value[1:]])
-        self.assertEqual((self.a * b).value, vector_squared_value)
+        self.assertEqual((self.a * b), vector_squared_value)
 
     def test_right_multiply_vector_by_one(self) -> None:
         self.assertEqual(self.a * 1, self.a)
@@ -256,6 +256,15 @@ class TestEinsteinTensor(unittest.TestCase):
         product_tensor_with_frame = et.Tensor_with_Frame(2.5 * np.array(self.a_value), self.a_indices, 'A')
         self.assertEqual(2.5 * a, product_tensor_with_frame)
 
+    def test_product_of_two_tensors_with_frames_has_same_frame(self) -> None:
+        a = et.Tensor_with_Frame(self.a_value, self.a_indices, 'A')
+        b = et.Tensor_with_Frame(self.a_value, ['^nu'], 'A')
+        self.assertEqual((a * b).frame, 'A')
+
+    def test_contractable_lorentz_indices_in_tensor_are_contracted(self) -> None:
+        matrix = np.array([[1, 0], [0, 3]])
+        tensor = et.Tensor(matrix, ['^mu', '_mu'])
+        self.assertEqual(tensor, 4)
 
 if __name__ == '__main__':
     unittest.main()
