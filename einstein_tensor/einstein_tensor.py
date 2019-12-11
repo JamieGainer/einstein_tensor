@@ -18,6 +18,14 @@ def _is_not_raised_or_lowered(index: str) -> bool:
     # returns true if index is not raised or lowered (i.e. does not begin with '^' or '_'), false otherwise
     return not _is_raised_or_lowered(index)
 
+def _complimentary_index(index: str) -> str:
+    # return the string describing a lowered index, if index is a raised index string (and vice versa)
+    if index[0] == '^':
+        return '_' + index[1:]
+    elif index[0] == '_':
+        return '^' + index[1:]
+    return index
+
 
 class Tensor():
     """
@@ -36,6 +44,10 @@ class Tensor():
     def __init__(self, value, indices) -> None:
         self.value = np.array(value)
         self.indices = np.array(indices)
+        if len(self.indices) > 1 and self.indices[1] == _complimentary_index(self.indices[0]):
+            self.value = np.trace(self.value, axis1=0, axis2=1)
+            self.indices = self.indices[2:]
+
 
     def is_scalar(self, tensor) -> bool:
         return tensor.value.shape == ()
@@ -171,16 +183,8 @@ class _TensorMultiplier():
         # if the input string in "index" is neither raised or lowered, return index
         complimentary_index = index
         if _is_raised_or_lowered(index):
-            complimentary_index = self._complimentary_index(index)
+            complimentary_index = _complimentary_index(index)
         return complimentary_index
-
-    def _complimentary_index(self, index: str) -> str:
-        # return the string describing a lowered index, if index is a raised index string (and vice versa)
-        if index[0] == '^':
-            return '_' + index[1:]
-        elif index[0] == '_':
-            return '^' + index[1:]
-        return index
 
     def _update_index_structures(self, i_index: int, index: str, complimentary_index) -> None:
         # fills in the appropriate index structures depending on whether or not
