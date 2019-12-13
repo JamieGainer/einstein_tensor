@@ -261,10 +261,32 @@ class TestEinsteinTensor(unittest.TestCase):
         b = et.Tensor_with_Frame(self.a_value, ['^nu'], 'A')
         self.assertEqual((a * b).frame, 'A')
 
-    def test_contractable_lorentz_indices_in_tensor_are_contracted(self) -> None:
+    def test_contractable_lorentz_indices_in_tensor_are_contracted_upper_lower(self) -> None:
         matrix = np.array([[1, 0], [0, 3]])
         tensor = et.Tensor(matrix, ['^mu', '_mu'])
         self.assertEqual(tensor, 4)
+
+    def test_contractable_lorentz_indices_in_tensor_are_contracted_lower_upper(self) -> None:
+        matrix = np.array([[1, 0], [0, 3]])
+        tensor = et.Tensor(matrix, ['_mu', '^mu'])
+        self.assertEqual(tensor, 4)
+
+    def test_contractable_indices_in_tensor_are_contracted(self) -> None:
+        matrix = np.array([[1, 0], [0, 3]])
+        tensor = et.Tensor(matrix, ['i', 'i'])
+        self.assertEqual(tensor, 4)
+
+    def test_contractable_lorentz_indices_in_tensor_are_contracted_upper_lower_1_3(self) -> None:
+        matrix = np.array([[[1, 0]], [[0, 3]]])
+        tensor = et.Tensor(matrix, ['^mu', '^nu', '_mu'])
+        self.assertEqual(tensor, et.Tensor([4], ['^nu']))
+
+    def test_contracting_more_complicated_index_structure(self) -> None:
+        complicated_tensor = et.Tensor([[[[[[[[[[[[1]]]]]]]]]]]],
+                                       ['^mu', '_nu', '_rho', 'a', 'b', 'c', 'c', 'a', 'e', '^nu', '^rho', '_mu'])
+        simple_tensor = et.Tensor([[1]], ['b', 'e'])
+        self.assertEqual(complicated_tensor, simple_tensor)
+
 
 if __name__ == '__main__':
     unittest.main()

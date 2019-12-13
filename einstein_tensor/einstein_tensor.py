@@ -44,10 +44,22 @@ class Tensor():
     def __init__(self, value, indices) -> None:
         self.value = np.array(value)
         self.indices = np.array(indices)
-        if len(self.indices) > 1 and self.indices[1] == _complimentary_index(self.indices[0]):
-            self.value = np.trace(self.value, axis1=0, axis2=1)
-            self.indices = self.indices[2:]
-
+        found_indices_to_contract = True
+        while found_indices_to_contract:
+            found_in_this_loop = False
+            for i_first_index, first_index in enumerate(self.indices):
+                for i_second_index, second_index in enumerate(self.indices[i_first_index + 1:], i_first_index + 1):
+                    if first_index == _complimentary_index(second_index):
+                        contract_indices = [i_first_index, i_second_index]
+                        self.value = np.trace(self.value, axis1=i_first_index, axis2=i_second_index)
+                        self.indices = np.array([index for i_index, index in enumerate(self.indices)
+                                                 if i_index not in contract_indices])
+                        found_in_this_loop = True
+                        break
+                if found_in_this_loop:
+                    break
+            else:
+                found_indices_to_contract = False
 
     def is_scalar(self, tensor) -> bool:
         return tensor.value.shape == ()
