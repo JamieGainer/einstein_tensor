@@ -44,6 +44,24 @@ class Tensor():
     def __init__(self, value, indices) -> None:
         self.value = np.array(value)
         self.indices = np.array(indices)
+
+        if len(self.indices) > 1:
+            index_count_dict  = {}
+            for index in self.indices:
+                if index in index_count_dict:
+                    index_count_dict[index] += 1
+                else:
+                    index_count_dict[index] = 1
+            for index, count in index_count_dict.items():
+                if count > 1:
+                    if _is_raised(index):
+                        raise ValueError('Cannot have identical raised indices.')
+                    elif _is_lowered(index):
+                        raise ValueError('Cannot have identical lowered indices.')
+                    else:
+                        if count > 2:
+                            raise ValueError('Cannot have three identical indices.')
+
         found_indices_to_contract = True
         while found_indices_to_contract:
             found_in_this_loop = False
@@ -137,8 +155,9 @@ class Tensor():
 
     def _multiply_by_tensor(self, other: Tensor) -> Tensor:
         # create a _TensorMultiplier object and use it to perform the multiplication
-        tensor_multiplier = _TensorMultiplier(self, other)
-        return tensor_multiplier._result()
+        value = np.multiply.outer(self.value, other.value)
+        indices = list(self.indices) + list(other.indices)
+        return Tensor(value, indices)
 
     def _right_multiply_tensor_by_scalar(self, other) -> Tensor:
         # perform tensor * scalar multiplication
