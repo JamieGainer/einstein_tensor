@@ -44,52 +44,15 @@ class Tensor():
     def __init__(self, value, indices) -> None:
         self.value = np.array(value)
         self.indices = np.array(indices)
-
-        if len(self.indices) > 1:
-            index_count_dict  = {}
-            for index in self.indices:
-                if index in index_count_dict:
-                    index_count_dict[index] += 1
-                else:
-                    index_count_dict[index] = 1
-            for index, count in index_count_dict.items():
-                if count > 1:
-                    if _is_raised(index):
-                        raise ValueError('Cannot have identical raised indices.')
-                    elif _is_lowered(index):
-                        raise ValueError('Cannot have identical lowered indices.')
-                    else:
-                        if count > 2:
-                            raise ValueError('Cannot have three identical indices.')
-
-        found_indices_to_contract = True
-        while found_indices_to_contract:
-            found_in_this_loop = False
-            for i_first_index, first_index in enumerate(self.indices):
-                for i_second_index, second_index in enumerate(self.indices[i_first_index + 1:], i_first_index + 1):
-                    if first_index == _complimentary_index(second_index):
-                        contract_indices = [i_first_index, i_second_index]
-                        self.value = np.trace(self.value, axis1=i_first_index, axis2=i_second_index)
-                        self.indices = np.array([index for i_index, index in enumerate(self.indices)
-                                                 if i_index not in contract_indices])
-                        found_in_this_loop = True
-                        break
-                if found_in_this_loop:
-                    break
-            else:
-                found_indices_to_contract = False
-
-    def is_scalar(self, tensor) -> bool:
-        return tensor.value.shape == ()
+        self._raise_value_error_for_illegal_repeated_indices()
+        self._contract_indices()
 
     def __eq__(self, other) -> bool:
         try:
             if self.is_scalar(self):
                 return self.value == other
             else:
-                equal_values = np.array_equal(self.value, other.value)
-                equal_indices = np.array_equal(self.indices, other.indices)
-                return equal_values and equal_indices
+                return self._check_tensor_members_are_equal(other)
         except AttributeError:
             return False
 
@@ -124,26 +87,17 @@ class Tensor():
 
     def __getitem__(self, tuple_of_indices):
         value_error_string = "Indices for tensor must be an integer or an empty slice for each index."
-        if type(tuple_of_indices) is not tuple:
-            tuple_of_indices = (tuple_of_indices, )
-        if len(tuple_of_indices) != len(self.indices):
-            raise ValueError(value_error_string)
-        list_of_indices = []
-        for i_index, index in enumerate(tuple_of_indices):
-            if type(index) is int:
-                pass
-            elif type(index) is slice:
-                if index.start is None and index.stop is None and index.step is None:
-                    list_of_indices.append(self.indices[i_index])
-                else:
-                    raise ValueError(value_error_string)
-            else:
-                raise ValueError(value_error_string)
+        tuple_of_indices = self._coax_singleton_to_tuple(tuple_of_indices)
+        self._raise_value_error_if_index_tuple_has_wrong_length(tuple_of_indices, value_error_string)
+        list_of_indices = self._make_list_of_indices_in_sliced_tensor(tuple_of_indices, value_error_string)
         return Tensor(self.value[tuple_of_indices], list_of_indices)
 
+    def is_scalar(self, tensor) -> bool:
+        return tensor.value.shape == ()
+
     def reindex_as(self, new_indices):
-        if len(new_indices) != len(self.indices):
-            raise ValueError('Cannot change number of indices/ dimensionality of tensor through reindexing.')
+        value_error_string = 'Cannot change number of indices/ dimensionality of tensor through reindexing.'
+        self._raise_value_error_if_index_tuple_has_wrong_length(new_indices, value_error_string)
         for old, new in zip(self.indices, new_indices):
             if _is_raised(old) and not _is_raised(new):
                 raise ValueError('Cannot change raised index to other kind of index through reindexing.')
@@ -152,6 +106,88 @@ class Tensor():
             if _is_not_raised_or_lowered(old) and _is_raised_or_lowered(new):
                 raise ValueError('Cannot change generic index to raised or lowered index through reindexing.')
         self.indices = new_indices
+
+    # __init__
+    def _contract_indices(self):
+        found_indices_to_contract = True
+        while found_indices_to_contract:
+            found_in_this_loop = False
+            for i_first_index, first_index in enumerate(self.indices):
+                for i_second_index, second_index in enumerate(self.indices[i_first_index + 1:], i_first_index + 1):
+                    if first_index == _complimentary_index(second_index):
+                        self._contract_specific_indices(i_first_index, i_second_index)
+                        found_in_this_loop = True
+                        break
+                if found_in_this_loop:
+                    break
+            else:
+                found_indices_to_contract = False
+
+    def _contract_specific_indices(self, i_first_index, i_second_index):
+        contract_index_numbers = [i_first_index, i_second_index]
+        self.value = np.trace(self.value, axis1=i_first_index, axis2=i_second_index)
+        self.indices = np.array([index for i_index, index in enumerate(self.indices)
+                                 if i_index not in contract_index_numbers])
+
+    def _raise_value_error_for_illegal_repeated_indices(self) -> None:
+        if len(self.indices) <= 1:
+            return
+        index_count_dict = self._count_indices()
+        self._check_for_repeated_indices_and_raise_value_error(index_count_dict)
+
+    def _check_for_repeated_indices_and_raise_value_error(self, index_count_dict):
+        for index, count in index_count_dict.items():
+            if count > 1:
+                if _is_raised(index):
+                    raise ValueError('Cannot have identical raised indices.')
+                elif _is_lowered(index):
+                    raise ValueError('Cannot have identical lowered indices.')
+                else:
+                    if count > 2:
+                        raise ValueError('Cannot have three identical indices.')
+
+    def _count_indices(self):
+        index_count_dict = {}
+        for index in self.indices:
+            if index in index_count_dict:
+                index_count_dict[index] += 1
+            else:
+                index_count_dict[index] = 1
+        return index_count_dict
+
+    def _check_tensor_members_are_equal(self, other):
+        equal_values = np.array_equal(self.value, other.value)
+        equal_indices = np.array_equal(self.indices, other.indices)
+        return equal_values and equal_indices
+
+    def _coax_singleton_to_tuple(self, tuple_of_indices):
+        if type(tuple_of_indices) is not tuple:
+            tuple_of_indices = (tuple_of_indices,)
+        return tuple_of_indices
+
+    def _raise_value_error_if_index_tuple_has_wrong_length(self, tuple_of_indices, value_error_string):
+        if len(tuple_of_indices) != len(self.indices):
+            raise ValueError(value_error_string)
+
+    def _make_list_of_indices_in_sliced_tensor(self, tuple_of_indices, value_error_string):
+        list_of_indices = []
+        for i_index, index in enumerate(tuple_of_indices):
+            self._process_slice_index(i_index, index, list_of_indices, value_error_string)
+        return list_of_indices
+
+    def _process_slice_index(self, i_index, index, list_of_indices, value_error_string):
+        if type(index) is int:
+            pass
+        elif type(index) is slice:
+            self._add_index_to_list_if_valid_slice(i_index, index, list_of_indices, value_error_string)
+        else:
+            raise ValueError(value_error_string)
+
+    def _add_index_to_list_if_valid_slice(self, i_index, index, list_of_indices, value_error_string):
+        if index.start is None and index.stop is None and index.step is None:
+            list_of_indices.append(self.indices[i_index])
+        else:
+            raise ValueError(value_error_string)
 
     def _multiply_by_tensor(self, other: Tensor) -> Tensor:
         # create a _TensorMultiplier object and use it to perform the multiplication
@@ -170,72 +206,6 @@ class Tensor():
         new_value = other * self.value
         new_indices = self.indices
         return Tensor(new_value, new_indices)
-
-
-class _TensorMultiplier():
-    # Internal class to perform Einstein summation convention tensor multiplications with (possibly)
-    # raised or lowered indices
-
-    def __init__(self, tensor_a: Tensor, tensor_b: Tensor) -> None:
-        # class takes two instantiations of Tensor as its arguments
-        self._a, self._b = tensor_a, tensor_b
-        self._a_contract_indices, self._b_contract_indices, self._a_keep_indices= [], [], []
-        self._b_remove_indices = set([])
-        self._b_indices_index = {index: i_index for i_index, index in enumerate(tensor_b.indices)}
-
-    def _result(self) -> Tensor:
-        # returns the Tensor found by multiplying self._a and self._b
-        self._process_indices()
-        new_value = np.tensordot(self._a.value, self._b.value,
-                                 axes=(self._a_contract_indices, self._b_contract_indices))
-        new_indices = self._a_keep_indices + self._b_keep_indices
-        if new_indices == []:
-            return new_value
-        return Tensor(new_value, new_indices)
-
-    def _process_indices(self) -> None:
-        # prepares for the multiplication by making lists describing the indices to keep and
-        # those to sum over
-        for i_index, index in enumerate(self._a.indices):
-            self._check_for_repeated_raised_or_lowered_index(index)
-            complimentary_index = self._obtain_complimentary_method(index)
-            self._update_index_structures(i_index, index, complimentary_index)
-        self._b_keep_indices = [index for index in self._b.indices if index not in self._b_remove_indices]
-
-    def _check_for_repeated_raised_or_lowered_index(self, index: str) -> None:
-        # return a ValueError if a raised or lowered index occurs in both self._a and self._b
-        if not _is_raised_or_lowered(index):
-            return
-        if index in self._b_indices_index:
-            raise ValueError("Cannot multiply tensors with identical raised or lowered indices.")
-
-    def _obtain_complimentary_method(self, index: str) -> str:
-        # return the string describing a lowered index, if index is a raised index string (and vice versa)
-        # if the input string in "index" is neither raised or lowered, return index
-        complimentary_index = index
-        if _is_raised_or_lowered(index):
-            complimentary_index = _complimentary_index(index)
-        return complimentary_index
-
-    def _update_index_structures(self, i_index: int, index: str, complimentary_index) -> None:
-        # fills in the appropriate index structures depending on whether or not
-        # complimentary_index is one of self._b's indices
-        if complimentary_index in self._b_indices_index:
-            self._index_in_a_compliment_in_b(i_index, complimentary_index)
-        else:
-            self._index_not_in_b(index)
-
-    def _index_in_a_compliment_in_b(self, i_index: int, complimentary_index: str) -> None:
-        # fills in the appropriate index structures when complimentary_index is one
-        # of self._b's indices
-        self._a_contract_indices.append(i_index)
-        self._b_contract_indices.append(self._b_indices_index[complimentary_index])
-        self._b_remove_indices.add(complimentary_index)
-
-    def _index_not_in_b(self, index: str) -> None:
-        # fills int the appropriate index structure when complimentary_index is not
-        # one of self._b's indices
-        self._a_keep_indices.append(index)
 
 
 class Tensor_with_Frame(Tensor):
